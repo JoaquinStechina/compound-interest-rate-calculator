@@ -11,14 +11,24 @@ export function ModeToggle() {
 
   if (theme === "light") {
     return (
-      <Button variant="outline" size="icon" onClick={() => setTheme("dark")}>
-        <Moon className="absolute h-[1.2rem] w-[1.2rem]" />
+      <Button
+        className="cursor-pointer"
+        variant="ghost"
+        size="sm"
+        onClick={() => setTheme("dark")}
+      >
+        <Moon className="text-primary absolute h-[1.2rem] w-[1.2rem]" />
       </Button>
     );
   } else {
     return (
-      <Button variant="outline" size="icon" onClick={() => setTheme("light")}>
-        <Sun className="h-[1.2rem] w-[1.2rem]" />
+      <Button
+        className="cursor-pointer"
+        variant="ghost"
+        size="sm"
+        onClick={() => setTheme("light")}
+      >
+        <Sun className="text-primary h-[1.2rem] w-[1.2rem]" />
       </Button>
     );
   }
