@@ -1,5 +1,7 @@
+import MainForm from "@/components/mainPage/MainForm";
+
 export default function Home() {
   return (
-    <div>hola</div>   
+    <MainForm/>   
   );
 }
