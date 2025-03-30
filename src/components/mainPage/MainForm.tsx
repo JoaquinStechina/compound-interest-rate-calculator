@@ -37,7 +37,7 @@ const formSchema = z.object({
   timeUnit: z.string({
     required_error: "The time unit is required!",
   }),
-  timeLength: z
+  timeLength: z.coerce
     .number({
       required_error: "The length of time is required!",
       invalid_type_error: "The length of time must be a number!",
@@ -66,13 +66,26 @@ const MainForm: React.FC = () => {
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     console.log(values);
+    let moneyArray = [values.initialAmount];
+    if (values.timeUnit === "month") {
+      for (let i = 1; i <= values.timeLength; i++) {
+        const P = moneyArray[i - 1] + values.monthlyContribution; //Dinero a invertir en el mes
+        const r = values.annualInterestRate; //TNA
+        const n = 12 * 100; // 12 meses * 100 para tener TNA en decimales
+        const Q = 1 + r / n;
+
+        const endOfMonthMoney = P * Q;
+        moneyArray.push(parseFloat(endOfMonthMoney.toFixed(2)));
+      }
+    }
+    console.log(moneyArray);
   };
 
   return (
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="w-3/7 bg-white p-8 shadow-lg rounded-lg dark:bg-background space-y-8"
+        className="w-auto bg-white p-8 shadow-lg rounded-lg dark:bg-background space-y-8"
       >
         <FormField
           control={form.control}
