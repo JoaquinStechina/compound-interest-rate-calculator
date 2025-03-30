@@ -1,7 +1,9 @@
 const Footer: React.FC = () => {
   return (
-    <footer>
-      <nav>Made with ♥ by Joaquin Stechina</nav>
+    <footer className="text-center pt-2 pb-2 border border-b-0 border-2 border-dashed">
+      <nav>
+        <h1>Made with ♥ by Joaquin Stechina</h1>
+      </nav>
     </footer>
   );
 };
