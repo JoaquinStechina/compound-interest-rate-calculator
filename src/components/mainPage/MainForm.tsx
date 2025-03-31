@@ -54,25 +54,35 @@ const MainForm: React.FC<MainFormProps> = ({ handleSubmit }) => {
         },
       ],
     };
-    if (values.timeUnit === "month") {
-      for (let i = 1; i <= values.timeLength; i++) {
-        const P =
-          investmentDataObject.moneyArray[i - 1].profit +
-          values.monthlyContribution; //Dinero a invertir en el mes
-        const r = values.annualInterestRate; //TNA
-        const n = 12 * 100; // 12 meses * 100 para tener TNA en decimales
-        const Q = 1 + r / n;
-        const T =
-          investmentDataObject.moneyArray[i - 1].totalInvested +
-          values.monthlyContribution; //Dinero invertido hasta el momento
+    //TEA = (1 + TNA/N*100)^N -1
+    //N es el numero de capitalizaciones en un año(12 si es mensual, 365 si es diario, etc)
+    //TODO agregar posibilidad de cambiar cantidad de capitalizaciones por año
+    //Anual - Mensual - Diaria; Por ahora solamente todo es mensual
 
-        const endOfMonthMoney = truncateToTwoDecimals(P * Q);
-        investmentDataObject.moneyArray.push({
-          profit: endOfMonthMoney,
-          totalInvested: T,
-          month: i,
-        });
-      }
+    const r = investmentDataObject.annualInterestRate; //TNA
+    const n = 12 * 100; // 12 meses * 100 para tener TNA en decimales
+    const TEM = 1 + r / n; //Tasa Efectiva Mensual
+    const TEA = Math.pow(1 + r / n, 12); //Tasa Efectiva Anual
+
+    if (investmentDataObject.timeUnit === "year") {
+      investmentDataObject.timeLength *= 12;
+    }
+
+    for (let i = 1; i <= investmentDataObject.timeLength; i++) {
+      const P =
+        investmentDataObject.moneyArray[i - 1].profit +
+        investmentDataObject.monthlyContribution; //Dinero a invertir en el mes
+      const T =
+        investmentDataObject.moneyArray[i - 1].totalInvested +
+        investmentDataObject.monthlyContribution; //Dinero invertido hasta el momento
+
+      const capitalizationMoney = truncateToTwoDecimals(P * TEM);
+
+      investmentDataObject.moneyArray.push({
+        profit: capitalizationMoney,
+        totalInvested: T,
+        month: i,
+      });
     }
     handleSubmit(investmentDataObject);
     console.log(investmentDataObject);
