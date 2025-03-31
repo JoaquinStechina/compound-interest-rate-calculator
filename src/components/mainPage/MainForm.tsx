@@ -64,11 +64,13 @@ const MainForm: React.FC<MainFormProps> = ({ handleSubmit }) => {
     const TEM = 1 + r / n; //Tasa Efectiva Mensual
     const TEA = Math.pow(1 + r / n, 12); //Tasa Efectiva Anual
 
+    let timeLength = investmentDataObject.timeLength;
+
     if (investmentDataObject.timeUnit === "year") {
-      investmentDataObject.timeLength *= 12;
+      timeLength = investmentDataObject.timeLength * 12;
     }
 
-    for (let i = 1; i <= investmentDataObject.timeLength; i++) {
+    for (let i = 1; i <= timeLength; i++) {
       const P =
         investmentDataObject.moneyArray[i - 1].profit +
         investmentDataObject.monthlyContribution; //Dinero a invertir en el mes
