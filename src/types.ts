@@ -33,6 +33,6 @@ export const formSchema = z.object({
 
 export type FormSchema = z.infer<typeof formSchema>;
 
-export type InvestmentDataObject = FormSchema & {
-  moneyArray: { totalInvested: number; profit: number }[];
+export type InvestmentData = FormSchema & {
+  moneyArray: { totalInvested: number; profit: number, month:number }[];
 };

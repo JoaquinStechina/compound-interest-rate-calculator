@@ -2,7 +2,7 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { formSchema, FormSchema, InvestmentDataObject } from "@/types";
+import { formSchema, FormSchema, InvestmentData } from "@/types";
 import {
   Form,
   FormControl,
@@ -22,9 +22,13 @@ import {
   SelectValue,
 } from "../ui/select";
 
+const truncateToTwoDecimals = (num: number): number => {
+  return Math.trunc(num * 100) / 100;
+};
+
 interface MainFormProps {
   handleSubmit: React.Dispatch<
-    React.SetStateAction<InvestmentDataObject | undefined>
+    React.SetStateAction<InvestmentData | undefined>
   >;
 }
 
@@ -40,10 +44,14 @@ const MainForm: React.FC<MainFormProps> = ({ handleSubmit }) => {
   });
 
   const onSubmit = (values: FormSchema) => {
-    let investmentDataObject: InvestmentDataObject = {
+    let investmentDataObject: InvestmentData = {
       ...values,
       moneyArray: [
-        { profit: values.initialAmount, totalInvested: values.initialAmount },
+        {
+          profit: values.initialAmount,
+          totalInvested: values.initialAmount,
+          month: 0,
+        },
       ],
     };
     if (values.timeUnit === "month") {
@@ -58,10 +66,11 @@ const MainForm: React.FC<MainFormProps> = ({ handleSubmit }) => {
           investmentDataObject.moneyArray[i - 1].totalInvested +
           values.monthlyContribution; //Dinero invertido hasta el momento
 
-        const endOfMonthMoney = P * Q;
+        const endOfMonthMoney = truncateToTwoDecimals(P * Q);
         investmentDataObject.moneyArray.push({
-          profit: parseFloat(endOfMonthMoney.toFixed(2)),
+          profit: endOfMonthMoney,
           totalInvested: T,
+          month: i,
         });
       }
     }

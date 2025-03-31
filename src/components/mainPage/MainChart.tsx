@@ -17,6 +17,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { type ChartConfig } from "@/components/ui/chart";
+import { InvestmentData } from "@/types";
 const chartData = [
   { month: "January", desktop: 186, mobile: 80 },
   { month: "February", desktop: 305, mobile: 200 },
@@ -33,28 +34,34 @@ const chartData = [
 ];
 
 const chartConfig = {
-  desktop: {
-    label: "Desktop",
+  profit: {
+    label: "Profit",
     color: "hsl(var(--chart-1))",
   },
-  mobile: {
-    label: "Total invested",
+  totalInvested: {
+    label: "Total Invested",
     color: "hsl(var(--chart-2))",
   },
 } satisfies ChartConfig;
 
-const MainChart: React.FC = () => {
+interface MainChartProps {
+  investmentData: InvestmentData | undefined;
+}
+
+const MainChart: React.FC<MainChartProps> = ({ investmentData }) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Line Chart - Multiple</CardTitle>
-        <CardDescription>January - June 2024</CardDescription>
+        <CardTitle>Compound Interest Chart</CardTitle>
+        <CardDescription>
+          Time unit: {investmentData?.timeUnit.toUpperCase()}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>
           <LineChart
             accessibilityLayer
-            data={chartData}
+            data={investmentData?.moneyArray}
             margin={{
               left: 12,
               right: 12,
@@ -66,26 +73,32 @@ const MainChart: React.FC = () => {
               tickLine={false}
               axisLine={false}
               tickMargin={1}
-              tickFormatter={(value) => value.slice(0, 3)}
             />
             <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
             <Line
-              dataKey="desktop"
+              dataKey="profit"
               type="monotone"
               stroke="var(--color-chart-1)"
               strokeWidth={2}
               dot={false}
             />
             <Line
-              dataKey="mobile"
+              dataKey="totalInvested"
               type="monotone"
-              stroke="var(--color-chart-3)"
+              stroke="var(--color-chart-2)"
               strokeWidth={2}
               dot={false}
             />
           </LineChart>
         </ChartContainer>
       </CardContent>
+      <CardFooter>
+        Total amount gained from interest: $
+        {
+          investmentData?.moneyArray[investmentData.moneyArray.length - 1]
+            .profit
+        }
+      </CardFooter>
     </Card>
   );
 };
