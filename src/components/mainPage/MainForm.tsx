@@ -44,7 +44,7 @@ const MainForm: React.FC<MainFormProps> = ({ handleSubmit }) => {
   });
 
   const onSubmit = (values: FormSchema) => {
-    let investmentDataObject: InvestmentData = {
+    const investmentDataObject: InvestmentData = {
       ...values,
       moneyArray: [
         {
@@ -68,7 +68,6 @@ const MainForm: React.FC<MainFormProps> = ({ handleSubmit }) => {
     const TED = 1 + TNA / o; //Tasa Efectiva Diaria
     const TESA = 1 + TNA / m; //Tasa Efectiva Semi Anual
     const TEM = 1 + TNA / n; //Tasa Efectiva Mensual
-    const TEA = Math.pow(TEM, 12); //Tasa Efectiva Anual
 
     let timeLength = investmentDataObject.timeLength;
 
