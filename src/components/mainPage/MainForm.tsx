@@ -59,15 +59,29 @@ const MainForm: React.FC<MainFormProps> = ({ handleSubmit }) => {
     //TODO agregar posibilidad de cambiar cantidad de capitalizaciones por año
     //Anual - Mensual - Diaria; Por ahora solamente todo es mensual
 
-    const r = investmentDataObject.annualInterestRate; //TNA
+    const TNA = investmentDataObject.annualInterestRate; //Tasa Nominal Anual
+
     const n = 12 * 100; // 12 meses * 100 para tener TNA en decimales
-    const TEM = 1 + r / n; //Tasa Efectiva Mensual
-    const TEA = Math.pow(1 + r / n, 12); //Tasa Efectiva Anual
+    const m = 2 * 100; // 2 meses * 100 para tener TNA en decimales
+    const o = 365 * 100; // 365 dias * 100 para tener TNA en decimales
+
+    const TED = 1 + TNA / o; //Tasa Efectiva Diaria
+    const TESA = 1 + TNA / m; //Tasa Efectiva Semi Anual
+    const TEM = 1 + TNA / n; //Tasa Efectiva Mensual
+    const TEA = Math.pow(TEM, 12); //Tasa Efectiva Anual
 
     let timeLength = investmentDataObject.timeLength;
 
     if (investmentDataObject.timeUnit === "year") {
       timeLength = investmentDataObject.timeLength * 12;
+    }
+
+    if (investmentDataObject.compoundFrequency === "daily") {
+      if (investmentDataObject.timeUnit === "year") {
+        timeLength = 365 * investmentDataObject.timeLength;
+      } else {
+        timeLength = 30 * investmentDataObject.timeLength;
+      }
     }
 
     for (let i = 1; i <= timeLength; i++) {
@@ -78,7 +92,19 @@ const MainForm: React.FC<MainFormProps> = ({ handleSubmit }) => {
         investmentDataObject.moneyArray[i - 1].totalInvested +
         investmentDataObject.monthlyContribution; //Dinero invertido hasta el momento
 
-      const capitalizationMoney = truncateToTwoDecimals(P * TEM);
+      let capitalizationMoney = P;
+      if (investmentDataObject.compoundFrequency === "annualy" && i % 12 == 0) {
+        capitalizationMoney = truncateToTwoDecimals(P * (1 + TNA / 100));
+      } else if (
+        investmentDataObject.compoundFrequency === "semiannualy" &&
+        i % 6 == 0
+      ) {
+        capitalizationMoney = truncateToTwoDecimals(P * TESA);
+      } else if (investmentDataObject.compoundFrequency === "monthly") {
+        capitalizationMoney = truncateToTwoDecimals(P * TEM);
+      } else if (investmentDataObject.compoundFrequency === "daily") {
+        capitalizationMoney = truncateToTwoDecimals(P * TED);
+      }
 
       investmentDataObject.moneyArray.push({
         profit: capitalizationMoney,
@@ -94,7 +120,7 @@ const MainForm: React.FC<MainFormProps> = ({ handleSubmit }) => {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="w-auto bg-white p-8 shadow-lg rounded-lg dark:bg-background space-y-8"
+        className="w-auto bg-white shadow-lg rounded-lg dark:bg-background space-y-8 py-5 md:max-w-[500px] col-span-5 col-start-2"
       >
         <FormField
           control={form.control}
@@ -131,7 +157,7 @@ const MainForm: React.FC<MainFormProps> = ({ handleSubmit }) => {
 
         <div>
           <FormLabel className="mb-3">Length in time</FormLabel>
-          <div className="grid grid-cols-4">
+          <div className="grid grid-cols-4 gap-4">
             <FormField
               control={form.control}
               name="timeUnit"
@@ -142,7 +168,7 @@ const MainForm: React.FC<MainFormProps> = ({ handleSubmit }) => {
                     defaultValue={field.value}
                   >
                     <FormControl>
-                      <SelectTrigger className="w-3/4">
+                      <SelectTrigger>
                         <SelectValue placeholder="Select" />
                       </SelectTrigger>
                     </FormControl>
@@ -190,7 +216,39 @@ const MainForm: React.FC<MainFormProps> = ({ handleSubmit }) => {
           )}
         />
 
-        <Button type="submit">Calculate</Button>
+        <FormLabel className="mb-0 pb-3">Compound frequency</FormLabel>
+        <div className="flex justify-between">
+          <FormField
+            control={form.control}
+            name="compoundFrequency"
+            render={({ field }) => (
+              <FormItem>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent className="border-input">
+                    <SelectItem value="annualy">Annualy</SelectItem>
+                    <SelectItem value="semiannualy">Semiannualy</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectItem value="daily">Daily</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormDescription>
+                  This will be the compound frequency of your investment
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <Button type="submit">Calculate</Button>
+        </div>
       </form>
     </Form>
   );

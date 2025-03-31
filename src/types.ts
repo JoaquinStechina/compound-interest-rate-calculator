@@ -29,6 +29,9 @@ export const formSchema = z.object({
     .positive({
       message: "The annual interest rate cannot be zero or negative!",
     }),
+  compoundFrequency: z.string({
+    required_error: "The compound frequency is required!",
+  }),
 });
 
 export type FormSchema = z.infer<typeof formSchema>;

@@ -22,11 +22,9 @@ import { InvestmentData } from "@/types";
 const chartConfig = {
   profit: {
     label: "Profit",
-    color: "hsl(var(--chart-1))",
   },
   totalInvested: {
     label: "Total Invested",
-    color: "hsl(var(--chart-2))",
   },
 } satisfies ChartConfig;
 
@@ -36,7 +34,7 @@ interface MainChartProps {
 
 const MainChart: React.FC<MainChartProps> = ({ investmentData }) => {
   return (
-    <Card>
+    <Card className="pt-6 col-span-5 my-5">
       <CardHeader>
         <CardTitle>Compound Interest Chart</CardTitle>
         <CardDescription>
@@ -74,7 +72,7 @@ const MainChart: React.FC<MainChartProps> = ({ investmentData }) => {
             <Line
               dataKey="totalInvested"
               type="monotone"
-              stroke="var(--color-chart-2)"
+              stroke="var(--color-chart-3)"
               strokeWidth={2}
               dot={false}
             />
