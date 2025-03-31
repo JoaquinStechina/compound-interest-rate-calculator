@@ -24,6 +24,12 @@ const chartData = [
   { month: "April", desktop: 73, mobile: 190 },
   { month: "May", desktop: 209, mobile: 130 },
   { month: "June", desktop: 214, mobile: 140 },
+  { month: "July", desktop: 186, mobile: 80 },
+  { month: "August", desktop: 305, mobile: 200 },
+  { month: "September", desktop: 237, mobile: 120 },
+  { month: "October", desktop: 73, mobile: 190 },
+  { month: "November", desktop: 209, mobile: 130 },
+  { month: "December", desktop: 214, mobile: 140 },
 ];
 
 const chartConfig = {
@@ -32,7 +38,7 @@ const chartConfig = {
     color: "hsl(var(--chart-1))",
   },
   mobile: {
-    label: "Mobile",
+    label: "Total invested",
     color: "hsl(var(--chart-2))",
   },
 } satisfies ChartConfig;
@@ -59,7 +65,7 @@ const MainChart: React.FC = () => {
               dataKey="month"
               tickLine={false}
               axisLine={false}
-              tickMargin={8}
+              tickMargin={1}
               tickFormatter={(value) => value.slice(0, 3)}
             />
             <ChartTooltip cursor={false} content={<ChartTooltipContent />} />

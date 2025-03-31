@@ -1,14 +1,16 @@
+"use client";
+import { InvestmentDataObject } from "@/types";
 import { useState } from "react";
 
 import MainChart from "./MainChart";
 import MainForm from "./MainForm";
 
 const MainPage: React.FC = () => {
-  const [moneyArray, setMoneyArray] = useState<[] | null>([]);
-
+  const [investmentDataObject, setInvestmentDataObject] =
+    useState<InvestmentDataObject>();
   return (
-    <div>
-      <MainForm />
+    <div className="grid grid-cols-2">
+      <MainForm handleSubmit={setInvestmentDataObject} />
       <MainChart />
     </div>
   );

@@ -2,7 +2,7 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import z from "zod";
+import { formSchema, FormSchema, InvestmentDataObject } from "@/types";
 import {
   Form,
   FormControl,
@@ -22,39 +22,14 @@ import {
   SelectValue,
 } from "../ui/select";
 
-const formSchema = z.object({
-  initialAmount: z.coerce
-    .number({
-      required_error: "The initial amount is required!",
-      invalid_type_error: "The initial amount must be a number!",
-    })
-    .positive({ message: "The initial amount cannot be zero or negative!" }),
-  monthlyContribution: z.coerce
-    .number({
-      invalid_type_error: "The monthly contribution must be a number!",
-    })
-    .nonnegative({ message: "The monthly contribution cannot be negative!" }),
-  timeUnit: z.string({
-    required_error: "The time unit is required!",
-  }),
-  timeLength: z.coerce
-    .number({
-      required_error: "The length of time is required!",
-      invalid_type_error: "The length of time must be a number!",
-    })
-    .positive({ message: "The length of time cannot be zero or negative!" }),
-  annualInterestRate: z.coerce
-    .number({
-      required_error: "The annual interest rate is required!",
-      invalid_type_error: "The annual interest rate must be a number!",
-    })
-    .positive({
-      message: "The annual interest rate cannot be zero or negative!",
-    }),
-});
+interface MainFormProps {
+  handleSubmit: React.Dispatch<
+    React.SetStateAction<InvestmentDataObject | undefined>
+  >;
+}
 
-const MainForm: React.FC = () => {
-  const form = useForm<z.infer<typeof formSchema>>({
+const MainForm: React.FC<MainFormProps> = ({ handleSubmit }) => {
+  const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       initialAmount: 0,
@@ -64,21 +39,34 @@ const MainForm: React.FC = () => {
     },
   });
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log(values);
-    let moneyArray = [values.initialAmount];
+  const onSubmit = (values: FormSchema) => {
+    let investmentDataObject: InvestmentDataObject = {
+      ...values,
+      moneyArray: [
+        { profit: values.initialAmount, totalInvested: values.initialAmount },
+      ],
+    };
     if (values.timeUnit === "month") {
       for (let i = 1; i <= values.timeLength; i++) {
-        const P = moneyArray[i - 1] + values.monthlyContribution; //Dinero a invertir en el mes
+        const P =
+          investmentDataObject.moneyArray[i - 1].profit +
+          values.monthlyContribution; //Dinero a invertir en el mes
         const r = values.annualInterestRate; //TNA
         const n = 12 * 100; // 12 meses * 100 para tener TNA en decimales
         const Q = 1 + r / n;
+        const T =
+          investmentDataObject.moneyArray[i - 1].totalInvested +
+          values.monthlyContribution; //Dinero invertido hasta el momento
 
         const endOfMonthMoney = P * Q;
-        moneyArray.push(parseFloat(endOfMonthMoney.toFixed(2)));
+        investmentDataObject.moneyArray.push({
+          profit: parseFloat(endOfMonthMoney.toFixed(2)),
+          totalInvested: T,
+        });
       }
     }
-    console.log(moneyArray);
+    handleSubmit(investmentDataObject);
+    console.log(investmentDataObject);
   };
 
   return (
