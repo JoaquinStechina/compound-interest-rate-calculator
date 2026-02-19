@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
 import { formSchema, FormSchema, InvestmentData } from "@/types";
 import {
   Form,
@@ -26,13 +28,19 @@ const truncateToTwoDecimals = (num: number): number => {
   return Math.trunc(num * 100) / 100;
 };
 
+// Máximo de puntos a mostrar en el gráfico para evitar problemas de rendimiento
+const MAX_CHART_POINTS = 1000;
+
 interface MainFormProps {
   handleSubmit: React.Dispatch<
     React.SetStateAction<InvestmentData | undefined>
   >;
+  onLoadingChange?: (isLoading: boolean) => void;
 }
 
-const MainForm: React.FC<MainFormProps> = ({ handleSubmit }) => {
+const MainForm: React.FC<MainFormProps> = ({ handleSubmit, onLoadingChange }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -43,7 +51,14 @@ const MainForm: React.FC<MainFormProps> = ({ handleSubmit }) => {
     },
   });
 
-  const onSubmit = (values: FormSchema) => {
+  const onSubmit = async (values: FormSchema) => {
+    // Indicar que el cálculo está en progreso
+    setIsLoading(true);
+    onLoadingChange?.(true);
+    
+    // Usar setTimeout para permitir que la UI se actualice y mostrar el estado de carga
+    // También permite que cálculos largos no bloqueen completamente la UI
+    setTimeout(() => {
     const investmentDataObject: InvestmentData = {
       ...values,
       moneyArray: [
@@ -54,65 +69,149 @@ const MainForm: React.FC<MainFormProps> = ({ handleSubmit }) => {
         },
       ],
     };
-    //TEA = (1 + TNA/N*100)^N -1
-    //N es el numero de capitalizaciones en un año(12 si es mensual, 365 si es diario, etc)
-    //TODO agregar posibilidad de cambiar cantidad de capitalizaciones por año
-    //Anual - Mensual - Diaria; Por ahora solamente todo es mensual
 
-    const TNA = investmentDataObject.annualInterestRate; //Tasa Nominal Anual
+    const TNA = investmentDataObject.annualInterestRate; // Tasa Nominal Anual en porcentaje (ej: 10 para 10%)
 
-    const n = 12 * 100; // 12 meses * 100 para tener TNA en decimales
-    const m = 2 * 100; // 2 meses * 100 para tener TNA en decimales
-    const o = 365 * 100; // 365 dias * 100 para tener TNA en decimales
+    // Convertir TNA a decimal (ej: 10% -> 0.10)
+    const TNADecimal = TNA / 100;
 
-    const TED = 1 + TNA / o; //Tasa Efectiva Diaria
-    const TESA = 1 + TNA / m; //Tasa Efectiva Semi Anual
-    const TEM = 1 + TNA / n; //Tasa Efectiva Mensual
-
-    let timeLength = investmentDataObject.timeLength;
-
-    if (investmentDataObject.timeUnit === "year") {
-      timeLength = investmentDataObject.timeLength * 12;
+    // Calcular número de períodos de capitalización por año según la frecuencia
+    let periodsPerYear: number;
+    switch (investmentDataObject.compoundFrequency) {
+      case "daily":
+        periodsPerYear = 365;
+        break;
+      case "monthly":
+        periodsPerYear = 12;
+        break;
+      case "semiannualy":
+        periodsPerYear = 2;
+        break;
+      case "annualy":
+        periodsPerYear = 1;
+        break;
+      default:
+        periodsPerYear = 12; // Default a mensual
     }
+
+    // Calcular tasa periódica efectiva
+    // Fórmula: Tasa Periódica = TNA / períodosPorAño
+    // Para capitalización: Factor = 1 + Tasa Periódica
+    const periodicRate = TNADecimal / periodsPerYear;
+    const compoundFactor = 1 + periodicRate;
+
+    // Convertir tiempo a meses (unidad base para contribuciones mensuales)
+    const timeInMonths = investmentDataObject.timeUnit === "year" 
+      ? investmentDataObject.timeLength * 12 
+      : investmentDataObject.timeLength;
+
+    const monthlyContribution = investmentDataObject.monthlyContribution;
+
+    // Estrategia diferente según frecuencia:
+    // - Para frecuencia diaria: iterar día por día
+    // - Para otras frecuencias: iterar mes por mes
+    let currentBalance = values.initialAmount;
+    let totalInvested = values.initialAmount;
+
+    // Calcular el intervalo de muestreo para limitar puntos del gráfico
+    // Mantenemos el cálculo preciso pero limitamos los puntos guardados
+    let totalPeriods: number;
+    if (investmentDataObject.compoundFrequency === "daily") {
+      totalPeriods = Math.round(timeInMonths * 30.44);
+    } else {
+      totalPeriods = timeInMonths;
+    }
+
+    // Calcular intervalo de muestreo para no exceder MAX_CHART_POINTS
+    // Siempre incluimos el primer punto (mes 0) y el último punto
+    const sampleInterval = totalPeriods > MAX_CHART_POINTS 
+      ? Math.ceil(totalPeriods / MAX_CHART_POINTS)
+      : 1;
 
     if (investmentDataObject.compoundFrequency === "daily") {
-      if (investmentDataObject.timeUnit === "year") {
-        timeLength = 365 * investmentDataObject.timeLength;
-      } else {
-        timeLength = 30 * investmentDataObject.timeLength;
+      // Para capitalización diaria, iterar día por día
+      const totalDays = Math.round(timeInMonths * 30.44); // Promedio de días por mes
+      
+      for (let day = 1; day <= totalDays; day++) {
+        // Aplicar contribución mensual cada ~30 días (aproximadamente cada mes)
+        if (monthlyContribution > 0 && day % 30 === 0) {
+          currentBalance += monthlyContribution;
+          totalInvested += monthlyContribution;
+        }
+
+        // Capitalizar diariamente
+        currentBalance = truncateToTwoDecimals(currentBalance * compoundFactor);
+
+        // Guardar puntos muestreados para el gráfico (manteniendo precisión en el cálculo)
+        // Siempre guardamos el último punto y puntos distribuidos uniformemente
+        const shouldSavePoint = 
+          day === totalDays || // Siempre guardar el último punto
+          day === 1 || // Siempre guardar el primer punto
+          day % sampleInterval === 0; // Guardar puntos distribuidos uniformemente
+
+        if (shouldSavePoint) {
+          investmentDataObject.moneyArray.push({
+            profit: currentBalance,
+            totalInvested: totalInvested,
+            month: day,
+          });
+        }
+      }
+    } else {
+      // Para otras frecuencias, iterar mes por mes
+      for (let month = 1; month <= timeInMonths; month++) {
+        // Aplicar contribución mensual al inicio de cada mes
+        if (monthlyContribution > 0) {
+          currentBalance += monthlyContribution;
+          totalInvested += monthlyContribution;
+        }
+
+        // Determinar si debemos capitalizar en este mes según la frecuencia
+        let shouldCapitalize = false;
+
+        switch (investmentDataObject.compoundFrequency) {
+          case "monthly":
+            // Capitalización mensual: capitalizar cada mes
+            shouldCapitalize = true;
+            break;
+
+          case "semiannualy":
+            // Capitalización semestral: capitalizar cada 6 meses
+            shouldCapitalize = month % 6 === 0;
+            break;
+
+          case "annualy":
+            // Capitalización anual: capitalizar cada 12 meses
+            shouldCapitalize = month % 12 === 0;
+            break;
+        }
+
+        // Aplicar capitalización si corresponde
+        if (shouldCapitalize) {
+          currentBalance = truncateToTwoDecimals(currentBalance * compoundFactor);
+        }
+
+        // Guardar puntos muestreados para el gráfico (manteniendo precisión en el cálculo)
+        // Siempre guardamos el último punto y puntos distribuidos uniformemente
+        const shouldSavePoint = 
+          month === timeInMonths || // Siempre guardar el último punto
+          month === 1 || // Siempre guardar el primer punto
+          month % sampleInterval === 0; // Guardar puntos distribuidos uniformemente
+
+        if (shouldSavePoint) {
+          investmentDataObject.moneyArray.push({
+            profit: currentBalance,
+            totalInvested: totalInvested,
+            month: month,
+          });
+        }
       }
     }
 
-    for (let i = 1; i <= timeLength; i++) {
-      const P =
-        investmentDataObject.moneyArray[i - 1].profit +
-        investmentDataObject.monthlyContribution; //Dinero a invertir en el mes
-      const T =
-        investmentDataObject.moneyArray[i - 1].totalInvested +
-        investmentDataObject.monthlyContribution; //Dinero invertido hasta el momento
-
-      let capitalizationMoney = P;
-      if (investmentDataObject.compoundFrequency === "annualy" && i % 12 == 0) {
-        capitalizationMoney = truncateToTwoDecimals(P * (1 + TNA / 100));
-      } else if (
-        investmentDataObject.compoundFrequency === "semiannualy" &&
-        i % 6 == 0
-      ) {
-        capitalizationMoney = truncateToTwoDecimals(P * TESA);
-      } else if (investmentDataObject.compoundFrequency === "monthly") {
-        capitalizationMoney = truncateToTwoDecimals(P * TEM);
-      } else if (investmentDataObject.compoundFrequency === "daily") {
-        capitalizationMoney = truncateToTwoDecimals(P * TED);
-      }
-
-      investmentDataObject.moneyArray.push({
-        profit: capitalizationMoney,
-        totalInvested: T,
-        month: i,
-      });
-    }
     handleSubmit(investmentDataObject);
-    console.log(investmentDataObject);
+    setIsLoading(false);
+    onLoadingChange?.(false);
+    }, 0);
   };
 
   return (
@@ -246,7 +345,16 @@ const MainForm: React.FC<MainFormProps> = ({ handleSubmit }) => {
             )}
           />
 
-          <Button type="submit">Calculate</Button>
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Calculating...
+              </>
+            ) : (
+              "Calculate"
+            )}
+          </Button>
         </div>
       </form>
     </Form>

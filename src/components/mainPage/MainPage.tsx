@@ -7,11 +7,13 @@ import MainForm from "./MainForm";
 
 const MainPage: React.FC = () => {
   const [investmentData, setInvestmentData] = useState<InvestmentData>();
+  const [isLoading, setIsLoading] = useState(false);
+  
   return (
     <div className="grid grid-cols-12 gap-6">
       <div className="border border-dashed border-1 border-t-0 border-b-0 border-l-0" />
-      <MainForm handleSubmit={setInvestmentData} />
-      <MainChart investmentData={investmentData} />
+      <MainForm handleSubmit={setInvestmentData} onLoadingChange={setIsLoading} />
+      <MainChart investmentData={investmentData} isLoading={isLoading} />
       <div className="border border-dashed border-1 border-t-0 border-b-0 border-r-0" />
     </div>
   );
